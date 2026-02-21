@@ -115,6 +115,11 @@ class NNUE(L.LightningModule):
         return loss
 
     def training_step(self, batch, batch_idx):
+        if batch_idx < 3 and self.global_rank == 0:
+            local_bs = batch[0].shape[0]
+            for batch_component in batch:
+                assert batch_component.shape[0] == local_bs
+            print(f"local batch size: {local_bs}")
         return self.step_(batch, batch_idx, "train_loss")
 
     def validation_step(self, batch, batch_idx):
