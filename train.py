@@ -401,10 +401,16 @@ def main():
             "Either both or none of start_lambda and end_lambda must be specified."
         )
 
+    devices = (
+        [int(x) for x in args.gpus.rstrip(",").split(",") if x] if args.gpus else "auto"
+    )
     batch_size = args.batch_size
     if batch_size <= 0:
         batch_size = 16384
-    print("Using batch size {}".format(batch_size))
+    if isinstance(devices, list):
+        batch_size = batch_size // len(devices)
+        print(f"Using per gpu batch size: {batch_size}")
+    print("Using effective batch size {}".format(batch_size * len(devices)))
 
     feature_set = M.get_feature_set_from_name(args.features)
 
@@ -493,9 +499,6 @@ def main():
         save_top_k=-1,
     )
 
-    devices = (
-        [int(x) for x in args.gpus.rstrip(",").split(",") if x] if args.gpus else "auto"
-    )
     # PL hack, undo slurm cluster detection which is broken for us. 'force interactive mode'
     # see lightning/fabric/plugins/environments/slurm.py near line 110
     os.environ["SLURM_JOB_NAME"] = "bash"
